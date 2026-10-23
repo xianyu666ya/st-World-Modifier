@@ -1,0 +1,10 @@
+{
+  "display_name": "世界修改器 · World Modifier",
+  "version": "2.0.0",
+  "description": "基于 World Modulator 二改（2026-10-23）：直接修改身份、认知与世界。",
+  "author": "WorldModulator",
+  "js": "index.js",
+  "css": "style.css",
+  "loading_order": 30,
+  "homePage": "https://github.com/xianyu666ya/st-World-Modifier"
+}
