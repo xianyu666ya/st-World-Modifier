@@ -1,0 +1,71 @@
+<!-- World Modulator UI, replaced 2026-10-23 for direct world modification. -->
+<button id="wm-floating-orb" type="button" aria-label="打开世界修改器" title="世界修改器 · 拖动移动">✦</button>
+<section id="wm-panel" aria-label="世界修改器" hidden>
+  <header class="wm-header" id="wm-drag-handle">
+    <div><span class="wm-eyebrow">WORLD MODIFIER</span><h2>世界修改器 <span class="wm-version">2.0</span></h2></div>
+    <button class="wm-icon-button" id="wm-close" type="button" aria-label="收起面板">×</button>
+  </header>
+  <div class="wm-status"><span class="wm-status-dot"></span><span id="wm-current-status">修改当前聊天中的世界</span></div>
+  <nav class="wm-tabs" aria-label="面板页面">
+    <button type="button" data-tab="edit" class="wm-tab wm-active">直接修改</button>
+    <button type="button" data-tab="active" class="wm-tab">已生效 <span id="wm-count">0</span></button>
+    <button type="button" data-tab="settings" class="wm-tab">设置</button>
+  </nav>
+  <div class="wm-body">
+    <div data-page="edit">
+      <div class="wm-intro"><h3>想改什么，直接写。</h3><p>改变自己的身份、人物的认知，或者整个世界。<br>点击应用，下一轮回复就会读取新的设定。</p></div>
+      <div class="wm-examples" aria-label="试试这些修改">
+        <button type="button" data-example="god">✧ 普通人变成神</button>
+        <button type="button" data-example="mind">◌ 改写人物认知</button>
+        <button type="button" data-example="world">☾ 改变世界环境</button>
+      </div>
+      <form id="wm-edit-form">
+        <div class="wm-form-grid">
+          <label>修改类型<select id="wm-edit-type"><option value="self">我的身份 / 能力</option><option value="cognition">人物认知</option><option value="world">世界 / 环境</option><option value="custom">其他修改</option></select></label>
+          <label>修改对象<input id="wm-edit-target" maxlength="120" placeholder="填写人物名或修改对象" autocomplete="off"></label>
+        </div>
+        <label class="wm-block-label" for="wm-edit-text">修改成什么</label>
+        <textarea id="wm-edit-text" rows="5" maxlength="16000" placeholder="例如：我现在已经成为掌控时间与空间的神，能够自由使用这些力量。" required></textarea>
+        <p class="wm-hint" id="wm-type-hint">写下修改完成后的结果，不需要编写规则。</p>
+        <label class="wm-block-label" id="wm-awareness-label">其他人如何理解变化
+          <select id="wm-edit-awareness"><option value="natural">自然接受，认为一直如此</option><option value="noticed">保留记忆，知道发生了变化</option><option value="preserve">只改事实，保留他人原有认知</option></select>
+        </label>
+        <div class="wm-form-actions"><button id="wm-apply" class="wm-button wm-primary" type="submit">应用修改 <span>↗</span></button><button id="wm-ai-refine" class="wm-button" type="button">AI 帮我细化</button></div>
+        <button id="wm-cancel-edit" class="wm-text-button" type="button" hidden>取消编辑，添加新的修改</button>
+        <p id="wm-edit-status" class="wm-inline-status" role="status" aria-live="polite"></p>
+      </form>
+      <div class="wm-footnote"><span>✦</span> 直接修改无需 API。AI 细化只会修改输入框，确认后再应用。</div>
+    </div>
+    <div data-page="active" hidden>
+      <div class="wm-page-heading"><div><h3>当前聊天的修改</h3><p>后添加或编辑的内容优先，同一对象也能多次修改。</p></div><button id="wm-undo" class="wm-button wm-small" type="button">撤销最近一条</button></div>
+      <div id="wm-modification-list"></div>
+      <p class="wm-hint">停用或删除后停止注入该项；已经生成的聊天正文不会被改写。</p>
+      <details class="wm-details"><summary>查看当前注入内容</summary><pre id="wm-injection-preview"></pre></details>
+    </div>
+    <div data-page="settings" hidden>
+      <section class="wm-settings-section"><h3>修改生效</h3>
+        <label class="wm-check"><input id="wm-injection-enabled" type="checkbox">向主模型注入已启用的修改</label>
+        <label class="wm-block-label">外观<select id="wm-theme"><option value="dark">深色</option><option value="light">浅色</option></select></label>
+      </section>
+      <section class="wm-settings-section"><div class="wm-page-heading"><h3>可选 AI 连接</h3><span class="wm-tag">用于细化描述</span></div>
+        <label class="wm-block-label">API 模式<select id="wm-api-mode"><option value="main">使用酒馆主 API</option><option value="custom">独立 API（OpenAI 兼容）</option></select></label>
+        <p id="wm-main-hint" class="wm-hint">使用酒馆当前的连接和模型。</p>
+        <div id="wm-custom-fields" hidden>
+          <label class="wm-block-label">API 地址<input id="wm-api-url" placeholder="https://api.example.com/v1" autocomplete="off"></label>
+          <label class="wm-block-label">API Key<input id="wm-api-key" type="password" placeholder="独立 API 的密钥" autocomplete="off"></label>
+          <label class="wm-block-label">模型名称<input id="wm-api-model" placeholder="可直接填写，不必先拉取列表" autocomplete="off"></label>
+          <div class="wm-model-row"><select id="wm-model-list" aria-label="可用模型"><option value="">可选：从列表选择模型</option></select><button id="wm-fetch-models" class="wm-button" type="button">拉取模型</button></div>
+        </div>
+        <details class="wm-details"><summary>连接选项</summary><label class="wm-block-label">请求方式<select id="wm-api-transport"><option value="auto">自动（优先酒馆代理）</option><option value="proxy">酒馆代理</option><option value="direct">浏览器直连（需要 API 允许跨域）</option></select></label><div class="wm-form-grid"><label>超时（秒）<input id="wm-api-timeout" type="number" min="5" max="1800"></label><label>温度<input id="wm-api-temperature" type="number" min="0" max="2" step="0.1"></label></div></details>
+        <div class="wm-form-actions"><button id="wm-test-connection" class="wm-button wm-primary" type="button">测试连接</button><button id="wm-api-import" class="wm-button" type="button">导入 API</button></div>
+        <p id="wm-api-status" class="wm-inline-status" role="status" aria-live="polite">配置自动保存。拉取不到模型时，也可以填写模型名后测试。</p>
+        <div class="wm-profile-row"><select id="wm-profile-select" aria-label="已保存的 API 配置"><option value="">已保存的配置</option></select><input id="wm-profile-name" maxlength="40" placeholder="配置名称"><button id="wm-profile-save" class="wm-button wm-small" type="button">保存</button><button id="wm-profile-delete" class="wm-text-button" type="button">删除</button></div>
+        <details class="wm-details"><summary>粘贴 API 配置 JSON</summary><textarea id="wm-api-json" rows="4" placeholder='{"apiUrl":"https://api.example.com/v1","apiKey":"…","model":"…"}'></textarea><button id="wm-api-paste" class="wm-button wm-small" type="button">导入此配置</button></details>
+        <input type="file" id="wm-api-file" accept=".json,application/json" hidden>
+      </section>
+      <section class="wm-settings-section"><h3>备份与恢复</h3><p class="wm-hint">备份包含所有聊天的修改和旧版存档，也支持导入旧版备份。</p><label class="wm-check"><input id="wm-backup-secrets" type="checkbox">导出时包含 API Key（用于完整迁移）</label><div class="wm-form-actions"><button id="wm-export" class="wm-button" type="button">导出备份</button><button id="wm-import" class="wm-button" type="button">恢复备份</button></div><input type="file" id="wm-import-file" accept=".json,application/json" hidden></section>
+    </div>
+  </div>
+  <footer class="wm-footer"><span>只作用于当前聊天</span><span>设置自动保存</span></footer>
+  <div id="wm-toast" role="status" aria-live="polite" hidden></div>
+</section>
