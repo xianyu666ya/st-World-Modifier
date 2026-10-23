@@ -1,0 +1,20 @@
+World Modifier 2.0 — derivative changes dated 2026-10-23
+
+Based on World Modulator by Mjbajj:
+https://github.com/Mjbajj/st-World-Modulator
+Original project license: Apache License, Version 2.0.
+
+The original project acknowledges ideas, architecture and parts of its code
+from BS BioTracker by Liuuuu54:
+https://github.com/Liuuuu54/st_bs_biotracker
+See LICENSE-BS-BioTracker for its attribution and license.
+
+Modified: index.js, template.html, style.css, manifest.json, scripts/api.js,
+scripts/inject.js, scripts/state.js and README.md.
+Added: scripts/modifier.js, scripts/backup.js, automated tests and this notice.
+
+This derivative replaces the rule-oriented interface with direct identity,
+cognition and world edits, adds per-chat editable modifications and full backups,
+and corrects independent API authorization and request handling.
+
+Original copyright and attribution notices remain applicable.
