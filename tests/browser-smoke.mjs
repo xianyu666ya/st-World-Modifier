@@ -1,0 +1,108 @@
+/** Optional UI smoke test. PLAYWRIGHT_MODULE may point to an existing installation. */
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { readFile, mkdir } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve, extname, sep } from 'node:path';
+const root = resolve(fileURLToPath(new URL('../', import.meta.url)));
+const artifacts = resolve(root, '.artifacts'); await mkdir(artifacts, { recursive: true });
+const modulePath = process.env.PLAYWRIGHT_MODULE;
+const { chromium } = modulePath ? await import(pathToFileURL(modulePath).href) : await import('playwright');
+let customRequests = 0;
+const server = createServer(async (req, res) => {
+    try {
+        if (req.url.startsWith('/api/backends/chat-completions/')) {
+            let raw = ''; for await (const chunk of req) raw += chunk; const body = JSON.parse(raw);
+            assert.equal(req.headers['x-csrf-token'], 'fixture-csrf');
+            assert.equal(JSON.parse(body.custom_include_headers).Authorization, 'Bearer ui-test-key');
+            customRequests++;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(req.url.endsWith('/status') ? { data: [{ id: 'listed-model' }] } : { choices: [{ message: { content: '{"ok":true}' } }] }));
+            return;
+        }
+        const url = new URL(req.url, 'http://localhost');
+        const relative = decodeURIComponent(url.pathname === '/' ? '/tests/fixtures/host.html' : url.pathname).slice(1);
+        const path = resolve(root, relative);
+        if (!path.startsWith(root + sep) && path !== root) { res.writeHead(403).end(); return; }
+        const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }[extname(path)] || 'application/octet-stream';
+        res.setHeader('Content-Type', mime + '; charset=utf-8'); res.end(await readFile(path));
+    } catch (error) { res.writeHead(500).end(error.message); }
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const port = server.address().port;
+const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_EXECUTABLE ? { executablePath: process.env.BROWSER_EXECUTABLE } : {}) });
+const errors = [];
+try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto('http://127.0.0.1:' + port);
+    await page.locator('#wm-floating-orb').click();
+    await page.locator('[data-example="god"]').click();
+    await page.locator('#wm-apply').click();
+    assert.match(await page.locator('#wm-edit-status').innerText(), /已应用/);
+    assert.match(await page.evaluate(() => Object.values(window.fixturePrompts).join('')), /成为掌控时间与空间的神/);
+    await page.locator('[data-tab="active"]').click();
+    assert.equal(await page.locator('.wm-modification').count(), 1);
+    await page.getByRole('button', { name: '停用', exact: true }).click();
+    assert.equal(await page.evaluate(() => Object.values(window.fixturePrompts).join('')), '');
+    await page.getByRole('button', { name: '启用', exact: true }).click();
+    await page.getByRole('button', { name: '编辑', exact: true }).click();
+    await page.locator('#wm-edit-text').fill('我已经成为掌管星辰的神。');
+    await page.locator('#wm-apply').click();
+    await page.locator('[data-example="mind"]').click();
+    await page.locator('#wm-edit-target').fill('林晚');
+    await page.locator('#wm-apply').click();
+    assert.match(await page.evaluate(() => Object.values(window.fixturePrompts).join('')), /只改写上述对象的认知/);
+    await page.locator('[data-tab="active"]').click();
+    assert.equal(await page.locator('.wm-modification').count(), 2);
+    await page.locator('#wm-undo').click();
+    assert.doesNotMatch(await page.evaluate(() => Object.values(window.fixturePrompts).join('')), /对象：林晚/);
+    await page.locator('#wm-close').click();
+    await page.locator('#fixture-chat-b').click();
+    await page.locator('#wm-floating-orb').click();
+    await page.locator('[data-tab="active"]').click();
+    assert.equal(await page.locator('.wm-modification').count(), 0);
+    assert.equal(await page.evaluate(() => Object.values(window.fixturePrompts).join('')), '');
+    await page.locator('#wm-close').click(); await page.locator('#fixture-chat-a').click(); await page.locator('#wm-floating-orb').click();
+    await page.reload(); await page.locator('#wm-floating-orb').click(); await page.locator('[data-tab="active"]').click();
+    assert.equal(await page.locator('.wm-modification').count(), 2);
+    await page.locator('[data-tab="settings"]').click();
+    await page.locator('#wm-api-json').evaluate((node) => node.closest('details').open = true);
+    await page.locator('#wm-api-json').fill('{"apiUrl":"https://custom.example/v1/chat/completions","apiKey":"ui-test-key","model":"typed-model"}');
+    await page.locator('#wm-api-paste').click();
+    assert.equal(await page.locator('#wm-api-mode').inputValue(), 'custom');
+    await page.locator('#wm-fetch-models').click();
+    await page.waitForFunction(() => document.getElementById('wm-api-status').textContent.includes('已拉取'));
+    assert.equal(await page.locator('#wm-api-model').inputValue(), 'typed-model');
+    await page.locator('#wm-test-connection').click();
+    await page.waitForFunction(() => document.getElementById('wm-api-status').textContent.includes('连接成功'));
+    assert.equal(customRequests, 2);
+    await page.locator('#wm-api-mode').selectOption('main');
+    await page.locator('[data-tab="edit"]').click();
+    await page.locator('[data-example="god"]').click();
+    await page.evaluate(() => { window.fixtureRefineDelay = 300; });
+    await page.locator('#wm-ai-refine').click();
+    await page.locator('#wm-edit-text').fill('我决定保留自己写下的描述。');
+    await page.waitForTimeout(450);
+    assert.equal(await page.locator('#wm-edit-text').inputValue(), '我决定保留自己写下的描述。');
+    await page.locator('[data-example="god"]').click();
+    await page.screenshot({ path: resolve(artifacts, 'desktop.png') });
+    await page.locator('[data-tab="settings"]').click();
+    await page.locator('#wm-theme').selectOption('light');
+    await page.locator('[data-tab="edit"]').click();
+    await page.screenshot({ path: resolve(artifacts, 'light.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: resolve(artifacts, 'mobile.png') });
+    let bounds = await page.locator('#wm-panel').boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 390 && bounds.y + bounds.height <= 844);
+    await page.locator('#wm-apply').click();
+    await page.locator('[data-tab="active"]').click();
+    assert.equal(await page.locator('.wm-modification').count(), 3);
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.locator('[data-tab="settings"]').click();
+    assert.equal(await page.evaluate(() => document.querySelector('.wm-body').scrollWidth > document.querySelector('.wm-body').clientWidth), false);
+    bounds = await page.locator('#wm-panel').boundingBox(); assert.ok(bounds.y + bounds.height <= 568);
+    assert.deepEqual(errors, []);
+    console.log('PASS: browser actions, reload persistence, chat isolation, custom API, stale AI response, 390px / 320px layouts.');
+    console.log('Screenshots: ' + artifacts);
+} finally { await browser.close(); server.close(); }
