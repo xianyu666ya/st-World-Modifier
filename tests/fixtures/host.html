@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>World Modifier · Test Host</title><link rel="stylesheet" href="/style.css"><style>body{margin:0;background:#0c121c;color:#8f9eaf;font:14px/1.8 system-ui}main{max-width:640px;margin:60px auto;padding:24px}h1{color:#d4deeb;font-size:22px}main button{background:#233247;border:1px solid #40546c;color:#fff;padding:8px 15px;border-radius:7px;margin-right:8px}.chat{padding:20px;background:#141f2e;border-radius:12px;margin:24px 0}#extensionsMenu{display:flex;gap:12px}</style>
+<main><p>本地测试环境 · 模拟酒馆宿主</p><h1>与林晚的故事</h1><div id="extensionsMenu"></div><div class="chat">林晚在窗边抬起头，问你今天有什么打算。</div><button id="fixture-chat-a">聊天 A</button><button id="fixture-chat-b">聊天 B</button><p>此页面只用于验证插件，不会连接真实模型。</p></main>
+<script>
+let chatId = 'chat-A';
+const settings = JSON.parse(localStorage.getItem('wm-fixture-settings') || '{}');
+const events = new Map();
+window.fixturePrompts = {};
+window.fixtureRefineDelay = 0;
+window.fixtureRequests = [];
+window.SillyTavern = { getContext: () => ({
+  name1: '旅人', characterId: 0, groupId: null, characters: [{ avatar: 'test.png' }],
+  chat: [{ name: '林晚', is_user: false, mes: '林晚在窗边抬起头。' }],
+  extensionSettings: settings, getCurrentChatId: () => chatId,
+  getRequestHeaders: () => ({ 'X-CSRF-Token': 'fixture-csrf' }),
+  saveSettingsDebounced: () => localStorage.setItem('wm-fixture-settings', JSON.stringify(settings)),
+  setExtensionPrompt: (key, text) => { window.fixturePrompts[key] = text; },
+  eventTypes: { CHAT_CHANGED: 'chat-changed', GENERATION_STARTED: 'generation-started' },
+  eventSource: { on: (event, handler) => { if (!events.has(event)) events.set(event, []); events.get(event).push(handler); } },
+  generateRaw: async (request) => {
+    await new Promise(resolve => setTimeout(resolve, window.fixtureRefineDelay));
+    return request.systemPrompt.includes('connection test') ? '{"ok":true}' : '{"text":"我已经成为掌控时间与空间的神，可以自由使用这些力量。"}';
+  },
+}) };
+for (const [id, key] of [['fixture-chat-a', 'chat-A'], ['fixture-chat-b', 'chat-B']]) document.getElementById(id).onclick = () => { chatId = key; for (const callback of events.get('chat-changed') || []) callback(); };
+</script><script type="module" src="/index.js"></script></html>
