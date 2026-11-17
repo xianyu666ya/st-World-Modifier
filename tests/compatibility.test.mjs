@@ -4,6 +4,7 @@ import { getSettings } from '../scripts/state.js';
 import { importApiConfig } from '../scripts/backup.js';
 import { buildProxyConnection, callAnalyzer } from '../scripts/api.js';
 import { saveModification, toggleModification, getModifications } from '../scripts/modifier.js';
+import { QR_BUTTON_ID, syncQrRegistration } from '../scripts/qr.js';
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 const context = () => ({ extensionSettings: {}, getCurrentChatId: () => 'A', saveSettingsDebounced() {} });
@@ -14,6 +15,19 @@ test('saving an edited disabled modification applies and enables it again', () =
     assert.equal(getModifications(ctx)[0].enabled, true);
 });
 function settings(ctx) { return Object.assign(getSettings(ctx), { apiMode: 'custom', apiUrl: 'https://old.example/v1', apiKey: 'old-test-key', model: 'test' }); }
+
+test('QR menu registration is opt-in, idempotent and preserves unrelated buttons', () => {
+    const win = { qrAssistantExtensionApi: [{ dom_id: 'other-button' }, { dom_id: QR_BUTTON_ID }] };
+    const button = { classList: { removed: [], remove(...names) { this.removed.push(...names); } } };
+    const doc = { getElementById: () => button };
+    syncQrRegistration(true, win, doc);
+    syncQrRegistration(true, win, doc);
+    assert.deepEqual(win.qrAssistantExtensionApi.map((item) => item.dom_id), ['other-button', QR_BUTTON_ID]);
+    assert.equal(win.qrAssistantExtensionApi[1].button_name, '打开世界修改器');
+    syncQrRegistration(false, win, doc);
+    assert.deepEqual(win.qrAssistantExtensionApi.map((item) => item.dom_id), ['other-button']);
+    assert.deepEqual(button.classList.removed, ['qrq-hidden-by-plugin', 'qrq-whitelisted-original']);
+});
 
 test('changing an API address without a key clears the previous endpoints key', () => {
     const ctx = context(); settings(ctx);

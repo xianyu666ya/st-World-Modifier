@@ -6,6 +6,7 @@ import { getModifications, saveModification, toggleModification, removeModificat
     undoLastModification, MODIFICATION_TYPES, AWARENESS_MODES } from './scripts/modifier.js';
 import { applyInjection, clearInjection, buildInjectionSegments } from './scripts/inject.js';
 import { exportBackup, importBackup, importApiConfig, parseImport } from './scripts/backup.js';
+import { syncQrRegistration } from './scripts/qr.js';
 
 const TEMPLATE_URL = new URL('./template.html', import.meta.url).href;
 const $ = (selector) => document.querySelector(selector);
@@ -206,6 +207,7 @@ function renderSettings() {
     value('#wm-api-temperature', settings.temperature);
     value('#wm-theme', settings.theme === 'light' ? 'light' : 'dark');
     $('#wm-injection-enabled').checked = settings.modifierInjectionEnabled !== false;
+    $('#wm-qr-menu-enabled').checked = settings.qrMenuEnabled === true;
     $('#wm-custom-fields').hidden = settings.apiMode !== 'custom';
     $('#wm-main-hint').hidden = settings.apiMode === 'custom';
     const connection = resolveConnection({ ...settings, apiMode: 'main' }, current());
@@ -287,6 +289,13 @@ function bindEvents() {
     }));
     $('#wm-undo').addEventListener('click', () => { undoLastModification(current()); refresh(); notify('已停用最近一条修改。'); });
     $('#wm-injection-enabled').addEventListener('change', (event) => { getSettings().modifierInjectionEnabled = event.target.checked; saveSettings(); refresh(); });
+    $('#wm-qr-menu-enabled').addEventListener('change', (event) => {
+        const settings = getSettings();
+        settings.qrMenuEnabled = event.target.checked;
+        saveSettings();
+        syncQrRegistration(settings.qrMenuEnabled);
+        notify(event.target.checked ? 'QR 菜单入口已启用。' : 'QR 菜单入口已关闭。');
+    });
     $('#wm-theme').addEventListener('change', (event) => { getSettings().theme = event.target.value; saveSettings(); applyTheme(); });
     for (const selector of ['#wm-api-mode', '#wm-api-url', '#wm-api-key', '#wm-api-model', '#wm-api-transport', '#wm-api-timeout', '#wm-api-temperature']) {
         $(selector).addEventListener('input', () => { syncApiFields(); if (selector === '#wm-api-mode') { $('#wm-custom-fields').hidden = $('#wm-api-mode').value !== 'custom'; $('#wm-main-hint').hidden = $('#wm-api-mode').value === 'custom'; } });
@@ -351,7 +360,10 @@ function setupDrag(handle, node, openOnClick) {
         drag = null;
     });
     handle.addEventListener('pointercancel', () => { drag = null; });
-    if (openOnClick) handle.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); togglePanel(); } });
+    if (openOnClick) handle.addEventListener('click', (event) => {
+        // QR Assistant activates registered DOM buttons with HTMLElement.click().
+        if (event.detail === 0 && !drag?.moved) togglePanel();
+    });
 }
 function openPanel() { $('#wm-panel').hidden = false; syncChat(); clampPositions(); }
 function closePanel() { $('#wm-panel').hidden = true; $('#wm-floating-orb').focus(); }
@@ -379,6 +391,7 @@ export async function init() {
         // Retire the old automatic tracker; manual world edits require no requests.
         clearInterval(globalThis.__world_modulator_poll__); globalThis.__world_modulator_poll__ = null;
         bindEvents(); renderSettings(); syncChat();
+        syncQrRegistration(getSettings(ctx).qrMenuEnabled === true);
         const on = (name, callback) => { if (ctx.eventTypes?.[name]) ctx.eventSource?.on?.(ctx.eventTypes[name], callback); };
         on('CHAT_CHANGED', syncChat);
         on('GENERATION_STARTED', () => { const latest = current(); if (latest) applyInjection(latest); });

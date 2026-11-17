@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     /** 总开关：插件是否自动分析 */
     enabled: false,
     modifierInjectionEnabled: true,
+    qrMenuEnabled: false,
     modifierInjectDepth: 0,
     apiTransport: 'auto',
     /** 是否注入调制器说明到主模型 */

@@ -67,6 +67,16 @@ try {
     await page.reload(); await page.locator('#wm-floating-orb').click(); await page.locator('[data-tab="active"]').click();
     assert.equal(await page.locator('.wm-modification').count(), 2);
     await page.locator('[data-tab="settings"]').click();
+    await page.locator('#wm-qr-menu-enabled').check();
+    assert.equal(await page.evaluate(() => window.qrAssistantExtensionApi?.[0]?.dom_id), 'wm-floating-orb');
+    await page.locator('#wm-close').click();
+    await page.evaluate(() => document.getElementById('wm-floating-orb').click());
+    assert.equal(await page.locator('#wm-panel').isVisible(), true);
+    await page.locator('#wm-close').click();
+    await page.evaluate(() => document.getElementById('wm-floating-orb').click());
+    await page.locator('[data-tab="settings"]').click();
+    await page.locator('#wm-qr-menu-enabled').uncheck();
+    assert.deepEqual(await page.evaluate(() => window.qrAssistantExtensionApi), []);
     await page.locator('#wm-api-json').evaluate((node) => node.closest('details').open = true);
     await page.locator('#wm-api-json').fill('{"apiUrl":"https://custom.example/v1/chat/completions","apiKey":"ui-test-key","model":"typed-model"}');
     await page.locator('#wm-api-paste').click();

@@ -2,7 +2,7 @@
 <button id="wm-floating-orb" type="button" aria-label="打开世界修改器" title="世界修改器 · 拖动移动">✦</button>
 <section id="wm-panel" aria-label="世界修改器" hidden>
   <header class="wm-header" id="wm-drag-handle">
-    <div><span class="wm-eyebrow">WORLD MODIFIER</span><h2>世界修改器 <span class="wm-version">2.0</span></h2></div>
+    <div><span class="wm-eyebrow">WORLD MODIFIER</span><h2>世界修改器 <span class="wm-version">2.1</span></h2></div>
     <button class="wm-icon-button" id="wm-close" type="button" aria-label="收起面板">×</button>
   </header>
   <div class="wm-status"><span class="wm-status-dot"></span><span id="wm-current-status">修改当前聊天中的世界</span></div>
@@ -45,6 +45,8 @@
     <div data-page="settings" hidden>
       <section class="wm-settings-section"><h3>修改生效</h3>
         <label class="wm-check"><input id="wm-injection-enabled" type="checkbox">向主模型注入已启用的修改</label>
+        <label class="wm-check"><input id="wm-qr-menu-enabled" type="checkbox">在 QR 快捷菜单中显示入口</label>
+        <p class="wm-hint">需要安装 QR 助手。开启后可从 QR 菜单打开世界修改器；也可以在 QR 助手设置中把此按钮加入白名单，保留在输入框旁。</p>
         <label class="wm-block-label">外观<select id="wm-theme"><option value="dark">深色</option><option value="light">浅色</option></select></label>
       </section>
       <section class="wm-settings-section"><div class="wm-page-heading"><h3>可选 AI 连接</h3><span class="wm-tag">用于细化描述</span></div>

@@ -1,6 +1,6 @@
 {
   "display_name": "世界修改器 · World Modifier",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "基于 World Modulator 二改（2026-10-23）：直接修改身份、认知与世界。",
   "author": "WorldModulator",
   "js": "index.js",
